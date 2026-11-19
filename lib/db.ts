@@ -1,9 +1,10 @@
 import { createClient, type InValue } from "@libsql/client"
 
-// Local: file:tabled.db. Production: libsql://<db>.turso.io + DATABASE_AUTH_TOKEN.
+// Local: file:tabled.db. Production: Turso (TURSO_* vars come from the Vercel integration).
+const env = process.env
 export const db = createClient({
-  url: process.env.DATABASE_URL ?? "file:tabled.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
+  url: env.DATABASE_URL ?? env.TURSO_DATABASE_URL ?? "file:tabled.db",
+  authToken: env.DATABASE_AUTH_TOKEN ?? env.TURSO_AUTH_TOKEN,
 })
 
 export async function all<T>(sql: string, args: InValue[] = []) {

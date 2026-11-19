@@ -2,7 +2,8 @@
 import { auth } from "../lib/auth"
 import { db, get, id } from "../lib/db"
 
-const url = process.env.DATABASE_URL ?? "file:tabled.db"
+const url =
+  process.env.DATABASE_URL ?? process.env.TURSO_DATABASE_URL ?? "file:tabled.db"
 if (!url.startsWith("file:"))
   throw new Error("seed only runs against a local file: database")
 if (await get(`select 1 from team where code = 'FORK-DEMO42'`)) {
