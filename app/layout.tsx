@@ -1,30 +1,34 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
-
+import type { Metadata } from "next"
+import { Bricolage_Grotesque, DM_Mono, Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-bricolage",
 })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-dm-mono",
+})
+
+export const metadata: Metadata = {
+  title: "project da",
+  description: "Every table, scored by your crew.",
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html
       lang="en"
-      suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={`${bricolage.variable} ${inter.variable} ${dmMono.variable}`}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
