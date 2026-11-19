@@ -15,5 +15,13 @@ export const auth = betterAuth({
   session: { expiresIn: 60 * 60 * 24 * 30 },
   // database storage so limits hold across serverless instances
   rateLimit: { enabled: true, storage: "database" },
+  // every Vercel domain this deploy answers on (prod alias, branch URL, deploy URL)
+  trustedOrigins: [
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_URL,
+  ]
+    .filter(Boolean)
+    .map((host) => `https://${host}`),
   plugins: [nextCookies()],
 })
