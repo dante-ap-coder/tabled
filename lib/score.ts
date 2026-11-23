@@ -1,5 +1,5 @@
 // Pure scoring rules (from the Paper user-flow board):
-// - scores 0–10 in 0.5 steps
+// - scores 0–10 in 0.1 steps
 // - team score = average of each member's LATEST score for a place
 // - a place needs 2+ scorers to appear in rankings
 
@@ -37,7 +37,7 @@ export const fmt = (x: number | null | undefined) =>
   x == null ? "—" : round1(x).toFixed(1)
 
 export const isValidScore = (x: number) =>
-  Number.isFinite(x) && x >= 0 && x <= 10 && Number.isInteger(x * 2)
+  Number.isFinite(x) && x >= 0 && x <= 10 && x === Math.round(x * 10) / 10
 
 export function placeStats(visits: Visit[]) {
   const out = new Map<string, PlaceStats>()
@@ -54,7 +54,9 @@ export function placeStats(visits: Visit[]) {
   }
   for (const s of out.values()) {
     const scores = [...s.latest.values()].map((v) => v.score)
-    s.team = avg(scores)
+    // sum whole tenths so float drift can't split ties (7.1+9.2 vs 7.2+9.1)
+    s.team =
+      scores.reduce((t, x) => t + Math.round(x * 10), 0) / (scores.length * 10)
     s.spread = (Math.max(...scores) - Math.min(...scores)) / 2
   }
   return out

@@ -176,7 +176,7 @@ export async function logVisit(
     return { error: "Pick a valid date (not in the future)." }
 
   const score = Number(String(fd.get("score") ?? "").trim() || NaN)
-  if (!isValidScore(score)) return { error: "Score must be 0–10 in 0.5 steps." }
+  if (!isValidScore(score)) return { error: "Score must be 0–10 in 0.1 steps." }
 
   const part = (k: string) => {
     const raw = String(fd.get(k) ?? "").trim()
@@ -186,7 +186,7 @@ export async function logVisit(
   }
   const parts = ["food", "service", "vibe", "value"].map(part)
   if (parts.some((p) => Number.isNaN(p)))
-    return { error: "Breakdown scores must be 0–10 in 0.5 steps." }
+    return { error: "Breakdown scores must be 0–10 in 0.1 steps." }
 
   const dishes = [
     ...new Set(
