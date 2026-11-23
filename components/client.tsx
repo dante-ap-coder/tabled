@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components"
 import { useEffect, useRef, useState } from "react"
-import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
 const NAV = [
@@ -128,21 +128,16 @@ export function MarkSeen() {
 }
 
 export function SignOut() {
-  const router = useRouter()
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        await authClient.signOut()
+    <LogoutLink
+      onClick={() => {
         for (const k of Object.keys(localStorage))
           if (k.startsWith("tabled:")) localStorage.removeItem(k)
-        router.replace("/login")
-        router.refresh()
       }}
       className="text-left text-sm font-medium text-mid hover:text-ink"
     >
       Sign out
-    </button>
+    </LogoutLink>
   )
 }
 

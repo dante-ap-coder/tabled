@@ -1,8 +1,7 @@
 import { cache } from "react"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { auth } from "./auth"
-import { all, get } from "./db"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { all, db, get } from "./db"
 import { placeStats, type Visit } from "./score"
 
 export type Member = { id: string; name: string; joined_at: number }
@@ -15,9 +14,32 @@ export type Restaurant = {
   created_at: number
 }
 
-export const getSession = cache(async () =>
-  auth.api.getSession({ headers: await headers() })
-)
+type User = { id: string; name: string; email: string }
+
+/** Kinde user mapped to our `user` row (created on first visit). */
+export const getSession = cache(async () => {
+  const k = await getKindeServerSession().getUser()
+  if (!k?.email) return null
+  // ponytail: matched by email so pre-Kinde accounts keep their history; Kinde verifies emails.
+  const found = await get<User>(
+    `select id, name, email from user where email = ? collate nocase`,
+    [k.email]
+  )
+  if (found) return { user: found }
+  const user: User = {
+    id: k.id,
+    name:
+      [k.given_name, k.family_name].filter(Boolean).join(" ") ||
+      k.email.split("@")[0]!,
+    email: k.email,
+  }
+  const now = new Date().toISOString()
+  await db.execute({
+    sql: `insert or ignore into user (id, name, email, emailVerified, createdAt, updatedAt) values (?, ?, ?, 1, ?, ?)`,
+    args: [user.id, user.name, user.email, now, now],
+  })
+  return { user }
+})
 
 /** Signed-in user + their team. Redirects to /login or /join otherwise. */
 export const getMe = cache(async () => {

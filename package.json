@@ -15,9 +15,8 @@
     "test": "bun test lib"
   },
   "dependencies": {
+    "@kinde-oss/kinde-auth-nextjs": "^2.13.2",
     "@libsql/client": "^0.18.0",
-    "@libsql/kysely-libsql": "^0.4.1",
-    "better-auth": "^1.7.26",
     "cn": "^0.5.2",
     "lucide-react": "^1.75.0",
     "next": "16.4.5",

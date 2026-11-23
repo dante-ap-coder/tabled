@@ -1,5 +1,4 @@
-// Dev-only demo data matching the Paper mockups. All demo passwords: tabled-demo
-import { auth } from "../lib/auth"
+// Dev-only demo data matching the Paper mockups. Log in with your own Kinde account, then join FORK-DEMO42.
 import { db, dbUrl, get, id } from "../lib/db"
 
 if (!dbUrl.startsWith("file:"))
@@ -20,10 +19,13 @@ const people = [
 const u: Record<string, string> = {}
 for (const name of people) {
   const email = `${name.split(" ")[0]!.toLowerCase()}@demo.tabled`
-  const res = await auth.api.signUpEmail({
-    body: { name, email, password: "tabled-demo" },
+  const uid = id()
+  const now = new Date().toISOString()
+  await db.execute({
+    sql: `insert into user (id, name, email, emailVerified, createdAt, updatedAt) values (?, ?, ?, 1, ?, ?)`,
+    args: [uid, name, email, now, now],
   })
-  u[name.split(" ")[0]!] = res.user.id
+  u[name.split(" ")[0]!] = uid
 }
 
 const teamId = id()
@@ -263,5 +265,5 @@ for (const [who, place] of wants)
     args: [u[who]!, r[place]!, Date.now()],
   })
 console.log(
-  "seeded Lunch Club · invite code FORK-DEMO42 · log in as sam@demo.tabled / tabled-demo"
+  "seeded Lunch Club · log in, then join with invite code FORK-DEMO42"
 )
