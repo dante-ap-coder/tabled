@@ -4,6 +4,9 @@ import { createClient, type InValue } from "@libsql/client"
 const env = process.env
 export const dbUrl =
   env.DATABASE_URL ?? env.TURSO_DATABASE_URL ?? "file:tabled.db"
+// Vercel's disk is wiped every deploy, so a file database there would silently lose everything.
+if (env.VERCEL && dbUrl.startsWith("file:"))
+  throw new Error("No Turso database configured (TURSO_DATABASE_URL missing)")
 export const db = createClient({
   url: dbUrl,
   authToken: env.DATABASE_AUTH_TOKEN ?? env.TURSO_AUTH_TOKEN,
