@@ -53,10 +53,7 @@ export const getMe = cache(async () => {
     `select m.team_id, t.name, t.code from member m join team t on t.id = m.team_id where m.user_id = ?`,
     [session.user.id]
   )
-  if (!m) {
-    console.log("no team", session.user.id, session.user.email) // TEMP
-    redirect("/join")
-  }
+  if (!m) redirect("/join")
   return {
     user: session.user,
     team: { id: m.team_id, name: m.name, code: m.code },

@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import { createClient, type InValue } from "@libsql/client"
 
 // Local: file:tabled.db. Production: Turso (TURSO_* vars come from the Vercel integration).
@@ -8,12 +7,6 @@ export const dbUrl =
 // Vercel's disk is wiped every deploy, so a file database there would silently lose everything.
 if (env.VERCEL && dbUrl.startsWith("file:"))
   throw new Error("No Turso database configured (TURSO_DATABASE_URL missing)")
-// TEMP: which database is this instance on? (hash only, the URL is secret)
-export const dbTag = createHash("sha256")
-  .update(dbUrl)
-  .digest("hex")
-  .slice(0, 8)
-console.log("db", dbTag)
 export const db = createClient({
   url: dbUrl,
   authToken: env.DATABASE_AUTH_TOKEN ?? env.TURSO_AUTH_TOKEN,
