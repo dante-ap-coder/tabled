@@ -20,11 +20,22 @@ type Place = {
   myLast: number | null
 }
 type NewPlace = { name: string; cuisine: string; area: string; price: string }
+type MyVisit = {
+  id: string
+  placeId: string
+  date: string
+  score: number
+  parts: Record<string, string>
+  dishes: string[]
+  companions: string[]
+  review: string
+}
 type Props = {
   draftKey: string
   places: Place[]
   teammates: { id: string; name: string }[]
   teamName: string
+  myVisits: MyVisit[]
 }
 
 const noop = () => () => {}
@@ -36,15 +47,17 @@ const today = () => {
     .slice(0, 10)
 }
 
-/** Opens whenever the URL has ?log=1 (blank) or ?log=<restaurantId>. */
+/** Opens whenever the URL has ?log=1 (blank), ?log=<restaurantId> or ?edit=<visitId>. */
 export function LogVisit(props: Props) {
   const params = useSearchParams()
-  const log = params.get("log")
+  const editing = props.myVisits.find((v) => v.id === params.get("edit"))
+  const log = editing ? `edit:${editing.id}` : params.get("log")
   const router = useRouter()
   const path = usePathname()
   const close = () => {
     const next = new URLSearchParams(params)
     next.delete("log")
+    next.delete("edit")
     router.replace(next.size ? `${path}?${next}` : path, { scroll: false })
   }
   // client-only: the modal reads a localStorage draft
@@ -54,7 +67,13 @@ export function LogVisit(props: Props) {
     () => false
   )
   return log && mounted ? (
-    <Modal key={log} initialId={log} onClose={close} {...props} />
+    <Modal
+      key={log}
+      initialId={log}
+      editing={editing}
+      onClose={close}
+      {...props}
+    />
   ) : null
 }
 
@@ -64,12 +83,17 @@ function Modal({
   teammates,
   teamName,
   initialId,
+  editing,
   onClose,
-}: Props & { initialId: string; onClose: () => void }) {
+}: Props & {
+  initialId: string
+  editing?: MyVisit
+  onClose: () => void
+}) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => ref.current?.showModal(), [])
 
-  const draft = initialId === "1" ? readDraft(draftKey) : null
+  const draft = editing ?? (initialId === "1" ? readDraft(draftKey) : null)
   const [placeId, setPlaceId] = useState<string | null>(
     draft?.placeId ??
       (places.some((p) => p.id === initialId) ? initialId : null)
@@ -118,7 +142,7 @@ function Modal({
     >
       <form
         action={action}
-        onSubmit={() => localStorage.removeItem(draftKey)}
+        onSubmit={() => !editing && localStorage.removeItem(draftKey)}
         className="flex max-h-[90svh] flex-col"
       >
         <div className="flex items-center justify-between border-b border-line px-8 py-5">
@@ -126,7 +150,7 @@ function Modal({
             id="log-title"
             className="font-display text-[28px] font-extrabold tracking-[-0.02em]"
           >
-            Log a visit
+            {editing ? "Edit your visit" : "Log a visit"}
           </h2>
           <button
             type="button"
@@ -164,13 +188,15 @@ function Modal({
                         {place ? place.meta || " " : "New place"}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => (setPlaceId(null), setNewPlace(null))}
-                      className="text-sm text-mid hover:text-ink"
-                    >
-                      Change
-                    </button>
+                    {!editing && (
+                      <button
+                        type="button"
+                        onClick={() => (setPlaceId(null), setNewPlace(null))}
+                        className="text-sm text-mid hover:text-ink"
+                      >
+                        Change
+                      </button>
+                    )}
                   </div>
                   {newPlace && (
                     <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
@@ -437,6 +463,7 @@ function Modal({
           </label>
         </div>
 
+        <input type="hidden" name="visitId" value={editing?.id ?? ""} />
         <input type="hidden" name="restaurantId" value={placeId ?? ""} />
         <input type="hidden" name="newName" value={newPlace?.name ?? ""} />
         <input type="hidden" name="cuisine" value={newPlace?.cuisine ?? ""} />
@@ -464,6 +491,7 @@ function Modal({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              hidden={!!editing}
               onClick={() => {
                 localStorage.setItem(
                   draftKey,
@@ -488,7 +516,7 @@ function Modal({
               disabled={pending || !(place || newPlace)}
               className="h-11.5 rounded-xl bg-ink px-6 text-[15px] font-semibold text-white disabled:opacity-40"
             >
-              {pending ? "Posting…" : "Post score"}
+              {pending ? "Saving…" : editing ? "Save changes" : "Post score"}
             </button>
           </div>
         </div>

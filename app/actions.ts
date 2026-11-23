@@ -79,15 +79,14 @@ const newPlace = (fd: FormData): writes.NewPlace => ({
   price: Number(fd.get("price")),
 })
 
+/** Posts a new visit, or saves an edit when the form carries a visitId. */
 export async function logVisit(
   _: unknown,
   fd: FormData
 ): Promise<{ error: string }> {
   const me = await getMe()
   const num = (k: string) => Number(String(fd.get(k) ?? "").trim() || NaN)
-  const res = await writes.logVisit(me.team.id, me.user.id, {
-    restaurantId: text(fd.get("restaurantId"), 64),
-    newPlace: newPlace(fd),
+  const fields: writes.VisitFields = {
     date: String(fd.get("date") ?? "").trim(),
     score: num("score"),
     parts: ["food", "service", "vibe", "value"].map((k) =>
@@ -96,7 +95,15 @@ export async function logVisit(
     review: text(fd.get("review"), 2000),
     dishes: jsonList(fd.get("dishes")),
     companions: jsonList(fd.get("companions")),
-  })
+  }
+  const visitId = text(fd.get("visitId"), 64)
+  const res = visitId
+    ? await writes.updateVisit(me.team.id, me.user.id, visitId, fields)
+    : await writes.logVisit(me.team.id, me.user.id, {
+        ...fields,
+        restaurantId: text(fd.get("restaurantId"), 64),
+        newPlace: newPlace(fd),
+      })
   if ("error" in res) return res
   revalidatePath("/", "layout")
   redirect(`/r/${res.restaurantId}`)

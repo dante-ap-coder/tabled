@@ -176,6 +176,18 @@ export function LogLink({
   ...props
 }: { place?: string } & Omit<React.ComponentProps<typeof Link>, "href">) {
   const params = new URLSearchParams(useSearchParams())
+  params.delete("edit")
   params.set("log", place)
+  return <Link {...props} href={`${usePathname()}?${params}`} scroll={false} />
+}
+
+/** Opens the log modal on one of your own visits (?edit=<visitId>). */
+export function EditLink({
+  visit,
+  ...props
+}: { visit: string } & Omit<React.ComponentProps<typeof Link>, "href">) {
+  const params = new URLSearchParams(useSearchParams())
+  params.delete("log")
+  params.set("edit", visit)
   return <Link {...props} href={`${usePathname()}?${params}`} scroll={false} />
 }

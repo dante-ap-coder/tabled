@@ -103,6 +103,20 @@ export default async function AppLayout({
           places={logPlaces}
           teammates={teammates}
           teamName={me.team.name}
+          myVisits={mine.map((v) => ({
+            id: v.id,
+            placeId: v.restaurant_id,
+            date: v.date,
+            score: v.score,
+            parts: Object.fromEntries(
+              (["food", "service", "vibe", "value"] as const).flatMap((k) =>
+                v[k] == null ? [] : [[k, String(v[k])]]
+              )
+            ),
+            dishes: v.dishes,
+            companions: v.companions,
+            review: v.review,
+          }))}
         />
       </Suspense>
     </div>

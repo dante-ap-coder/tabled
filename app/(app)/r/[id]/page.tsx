@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { LogLink } from "@/components/client"
+import { EditLink, LogLink } from "@/components/client"
 import { notFound } from "next/navigation"
 import { toggleWant } from "@/app/actions"
 import {
@@ -176,6 +176,17 @@ export default async function RestaurantPage({
                     </Link>{" "}
                     · {fmtDate(v.date, { month: "short", day: "numeric" })} ·{" "}
                     {ordinal(nth.get(v.id)!)} visit
+                    {v.user_id === me.user.id && (
+                      <>
+                        {" · "}
+                        <EditLink
+                          visit={v.id}
+                          className="font-semibold text-mid hover:text-ink"
+                        >
+                          Edit
+                        </EditLink>
+                      </>
+                    )}
                   </p>
                   {v.review && (
                     <p className="text-[15px]/5.5 text-body">{v.review}</p>

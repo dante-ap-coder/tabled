@@ -123,6 +123,60 @@ test("logVisit: place and visit commit together, team-scoped", async () => {
   expect(await all(`select id from visit`)).toHaveLength(2)
 })
 
+test("updateVisit: owner edits any field but the place; nobody else can", async () => {
+  const lunch = (await teamOf(ana))!
+  const solo = (await teamOf(cy))!
+  const v = (await get<{ id: string; restaurant_id: string }>(
+    `select id, restaurant_id from visit where user_id = ?`,
+    [ana]
+  ))!
+  const edit = visit({
+    date: "2026-11-01",
+    score: 6.2,
+    parts: [7, null, 5.5, null],
+    review: "Went downhill",
+    dishes: ["Pad see ew ", "Pad see ew"],
+    companions: [cy], // cy is on another team, so this clears the saved [ben]
+  })
+  expect(await w.updateVisit(lunch, ana, v.id, edit)).toEqual({
+    restaurantId: v.restaurant_id,
+  })
+  expect(
+    await get(
+      `select date, score, food, service, vibe, value, review, dishes, companions, restaurant_id from visit where id = ?`,
+      [v.id]
+    )
+  ).toEqual({
+    date: "2026-11-01",
+    score: 6.2,
+    food: 7,
+    service: null,
+    vibe: 5.5,
+    value: null,
+    review: "Went downhill",
+    dishes: JSON.stringify(["Pad see ew"]),
+    companions: JSON.stringify([]),
+    restaurant_id: v.restaurant_id,
+  } as never)
+
+  // a teammate, another team, or a bad score can't change it
+  const denied = { error: "You can only edit your own visits." }
+  expect(await w.updateVisit(lunch, ben, v.id, visit({ score: 1 }))).toEqual(
+    denied
+  )
+  expect(await w.updateVisit(solo, ana, v.id, visit({ score: 1 }))).toEqual(
+    denied
+  )
+  expect(
+    await w.updateVisit(lunch, ana, v.id, visit({ score: 10.05 }))
+  ).toHaveProperty("error")
+  expect(
+    (await get<{ score: number }>(`select score from visit where id = ?`, [
+      v.id,
+    ]))!.score
+  ).toBe(6.2)
+})
+
 test("wants: toggle on and off, add by name, team-scoped", async () => {
   const lunch = (await teamOf(ana))!
   const solo = (await teamOf(cy))!
