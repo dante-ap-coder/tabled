@@ -111,10 +111,7 @@ const insertPlace = (teamId: string, userId: string, p: NewPlace) => ({
   ],
 })
 
-export type VisitInput = {
-  /** an existing place; wins over `newPlace` */
-  restaurantId: string
-  newPlace: NewPlace
+export type VisitFields = {
   date: string
   score: number
   /** food, service, vibe, value */
@@ -124,12 +121,18 @@ export type VisitInput = {
   companions: string[]
 }
 
-/** Log a visit, adding the place if it is new. The place and the visit commit together. */
-export async function logVisit(
+export type VisitInput = VisitFields & {
+  /** an existing place; wins over `newPlace` */
+  restaurantId: string
+  newPlace: NewPlace
+}
+
+/** Shared checks for a new or edited visit; returns the cleaned lists. */
+async function cleanVisit(
   teamId: string,
   userId: string,
-  v: VisitInput
-): Promise<{ error: string } | { restaurantId: string }> {
+  v: VisitFields
+): Promise<{ error: string } | { dishes: string[]; companions: string[] }> {
   const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0, 10)
   const realDate =
     /^\d{4}-\d{2}-\d{2}$/.test(v.date) &&
@@ -145,8 +148,6 @@ export async function logVisit(
     v.parts.some((p) => p !== null && !isValidScore(p))
   )
     return { error: "Breakdown scores must be 0–10 in 0.1 steps." }
-  if (!v.restaurantId && !v.newPlace.name)
-    return { error: "Pick a place or add a new one." }
 
   const dishes = [
     ...new Set(v.dishes.map((d) => d.trim().slice(0, 40)).filter(Boolean)),
@@ -158,6 +159,20 @@ export async function logVisit(
   const companions = [...new Set(v.companions)].filter(
     (u) => u !== userId && members.some((m) => m.user_id === u)
   )
+  return { dishes, companions }
+}
+
+/** Log a visit, adding the place if it is new. The place and the visit commit together. */
+export async function logVisit(
+  teamId: string,
+  userId: string,
+  v: VisitInput
+): Promise<{ error: string } | { restaurantId: string }> {
+  if (!v.restaurantId && !v.newPlace.name)
+    return { error: "Pick a place or add a new one." }
+  const clean = await cleanVisit(teamId, userId, v)
+  if ("error" in clean) return clean
+  const { dishes, companions } = clean
 
   // selecting from restaurant makes the visit insert its own "is this my team's place" check
   const visit = {
@@ -185,6 +200,36 @@ export async function logVisit(
   )
   const rid = res.at(-1)!.rows[0]?.restaurant_id
   if (!rid) return { error: "Pick a place from your team's list." }
+  return { restaurantId: String(rid) }
+}
+
+/** Edit one of this user's own visits. The place stays the same. */
+export async function updateVisit(
+  teamId: string,
+  userId: string,
+  visitId: string,
+  v: VisitFields
+): Promise<{ error: string } | { restaurantId: string }> {
+  const clean = await cleanVisit(teamId, userId, v)
+  if ("error" in clean) return clean
+  const res = await db.execute({
+    sql: `update visit set date = ?, score = ?, food = ?, service = ?, vibe = ?, value = ?,
+            review = ?, dishes = ?, companions = ?
+          where id = ? and user_id = ? and team_id = ? returning restaurant_id`,
+    args: [
+      v.date,
+      v.score,
+      ...v.parts,
+      v.review,
+      JSON.stringify(clean.dishes),
+      JSON.stringify(clean.companions),
+      visitId,
+      userId,
+      teamId,
+    ],
+  })
+  const rid = res.rows[0]?.restaurant_id
+  if (!rid) return { error: "You can only edit your own visits." }
   return { restaurantId: String(rid) }
 }
 
