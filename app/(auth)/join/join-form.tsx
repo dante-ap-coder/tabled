@@ -9,6 +9,8 @@ export function JoinForm(props: {
   initialCode: string
   initialInvite: Invite | null
   startNew: boolean
+  /** false for someone who already has a team: they can only take an invite */
+  canStartNew: boolean
   signedInAs: string | null
 }) {
   const [mode, setMode] = useState<"invite" | "new">(
@@ -138,17 +140,21 @@ export function JoinForm(props: {
               : "Join the table →"}
         </button>
         <p className="flex flex-wrap justify-center gap-1.5 text-[15px] text-mute">
-          {mode === "invite" ? "No code?" : "Have a code?"}
-          <button
-            type="button"
-            onClick={() => (
-              setMode(mode === "invite" ? "new" : "invite"),
-              setError("")
-            )}
-            className="font-semibold text-ink underline underline-offset-2"
-          >
-            {mode === "invite" ? "Start a new team" : "Join with an invite"}
-          </button>
+          {props.canStartNew && (
+            <>
+              {mode === "invite" ? "No code?" : "Have a code?"}
+              <button
+                type="button"
+                onClick={() => (
+                  setMode(mode === "invite" ? "new" : "invite"),
+                  setError("")
+                )}
+                className="font-semibold text-ink underline underline-offset-2"
+              >
+                {mode === "invite" ? "Start a new team" : "Join with an invite"}
+              </button>
+            </>
+          )}
           {!props.signedInAs && (
             <>
               <span className="mx-1">·</span>
