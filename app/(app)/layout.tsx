@@ -140,6 +140,11 @@ function TeamMenu({
         <p className="label">Invite code</p>
         <p className="font-mono text-lg tracking-[0.12em]">{team.code}</p>
         <CopyInvite code={team.code} />
+        {members.length === 1 && (
+          <Link href="/join" className="text-sm text-mid underline">
+            Got an invite code? Join that team instead
+          </Link>
+        )}
         <div className="flex flex-wrap gap-1">
           {members.map((m) => (
             <Link key={m.id} href={`/diary?u=${m.id}`}>

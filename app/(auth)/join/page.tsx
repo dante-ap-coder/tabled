@@ -14,11 +14,14 @@ export default async function JoinPage({
 }) {
   const { code = "", new: startNew } = await searchParams
   const session = await getSession()
-  // with a code, a member still gets the form: an invite can move them off a solo team
+  // someone alone on their team can still take an invite; on a shared team there is nothing to do here
   if (
     session &&
     !code &&
-    (await get(`select 1 from member where user_id = ?`, [session.user.id]))
+    (await get(
+      `select 1 from member m where m.user_id = ? and (select count(*) from member where team_id = m.team_id) > 1`,
+      [session.user.id]
+    ))
   )
     redirect("/")
   const invite = code ? await checkInvite(code) : null
