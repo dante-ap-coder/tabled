@@ -194,17 +194,24 @@ export async function toggleWant(
   userId: string,
   restaurantId: string
 ) {
-  const del = await db.execute({
-    sql: `delete from want where user_id = ? and restaurant_id = ?`,
-    args: [userId, restaurantId],
-  })
-  if (del.rowsAffected) return
-  // or ignore: a double tap must not fail on the second insert
-  await db.execute({
-    sql: `insert or ignore into want (user_id, restaurant_id, created_at)
-          select ?, id, ? from restaurant where id = ? and team_id = ?`,
-    args: [userId, Date.now(), restaurantId, teamId],
-  })
+  const key = [userId, restaurantId]
+  // one write transaction, so two taps always flip twice: an existing mark is
+  // flagged by the upsert, then removed
+  await db.batch(
+    [
+      {
+        sql: `insert into want (user_id, restaurant_id, created_at)
+              select ?, id, ? from restaurant where id = ? and team_id = ?
+              on conflict (user_id, restaurant_id) do update set created_at = -1`,
+        args: [userId, Date.now(), restaurantId, teamId],
+      },
+      {
+        sql: `delete from want where user_id = ? and restaurant_id = ? and created_at = -1`,
+        args: key,
+      },
+    ],
+    "write"
+  )
 }
 
 /** Add a place (new or existing, by name) to this user's "want to try" list. */
