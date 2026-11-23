@@ -20,6 +20,11 @@ export async function get<T>(sql: string, args: InValue[] = []) {
 export const id = () => crypto.randomUUID()
 
 export const APP_SCHEMA = [
+  // columns match the old Better Auth table so existing databases keep working
+  `create table if not exists user (
+    id text primary key, name text not null, email text not null unique,
+    emailVerified integer not null default 1, image text,
+    createdAt date not null, updatedAt date not null)`,
   `create table if not exists team (
     id text primary key, name text not null, code text not null unique,
     created_by text, created_at integer not null)`,

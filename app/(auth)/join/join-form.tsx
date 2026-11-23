@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { useEffect, useState, useTransition } from "react"
-import { authClient } from "@/lib/auth-client"
 import { checkInvite, joinTeam, type Invite } from "../../actions"
 import { Field, inputCls, primaryBtn } from "../shell"
 
@@ -42,13 +41,11 @@ export function JoinForm(props: {
       if (mode === "invite" && !(await checkInvite(code)))
         return setError("That invite code doesn't match a team.")
       if (!props.signedInAs) {
-        const { error } = await authClient.signUp.email({
-          name: String(fd.get("name")).trim(),
-          email: String(fd.get("email")).trim(),
-          password: String(fd.get("password")),
-        })
-        if (error)
-          return setError(error.message ?? "Couldn't create your account.")
+        // sign up with Kinde, then land back here with the code filled in
+        const back = mode === "invite" ? `/join?code=${code}` : "/join?new=1"
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API route, needs a full navigation
+        location.href = `/api/auth/register?post_login_redirect_url=${encodeURIComponent(back)}`
+        return
       }
       const res = await joinTeam(
         mode === "invite" ? { code } : { teamName: String(fd.get("teamName")) }
@@ -89,44 +86,10 @@ export function JoinForm(props: {
       </div>
 
       <div className="flex flex-col gap-4">
-        {props.signedInAs ? (
+        {props.signedInAs && (
           <p className="text-[15px] text-mid">
             Signed in as <b className="text-ink">{props.signedInAs}</b>.
           </p>
-        ) : (
-          <>
-            <Field label="Your name">
-              <input
-                name="name"
-                required
-                maxLength={60}
-                autoComplete="name"
-                placeholder="Sam K."
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Work email">
-              <input
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="sam@company.com"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Password">
-              <input
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="new-password"
-                placeholder="8+ characters"
-                className={inputCls}
-              />
-            </Field>
-          </>
         )}
         {mode === "invite" ? (
           <Field label="Invite code">
